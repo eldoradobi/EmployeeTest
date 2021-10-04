@@ -1,0 +1,81 @@
+﻿@{
+    ViewBag.Title = "Сотрудники";
+}
+
+@using MetinvestTest.Models;
+@using System.Reflection;
+@using System.ComponentModel.DataAnnotations;
+@using Foolproof;
+
+<table id="dg" title="Сотрудники" class="easyui-datagrid" style="width:100%;"
+       url="/api/employees/get"
+       toolbar="#toolbar" pagination="true" , idField="@nameof(Employee.Id)"
+       rownumbers="true" fitColumns="true" singleSelect="true">
+    <thead>
+        @{
+            PropertyInfo[] properties = typeof(Employee).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        }
+        <tr>
+            @foreach (PropertyInfo property in properties)
+            {
+                bool isCheckbox = property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?);
+                var formatterAttr = property.GetCustomAttribute<JsFormatterAttribute>();
+                var atrribute = property.GetCustomAttribute<DisplayAttribute>();
+                <th field="@property.Name" width="50" formatter="@(formatterAttr?.FormatterName)">@(atrribute != null ? atrribute.Name : property.Name)</th>
+            }
+        </tr>
+    </thead>
+</table>
+<div id="toolbar">
+    <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="newUser()">Добавить</a>
+    <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-edit" plain="true" onclick="editUser()">Редактировать</a>
+    <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-remove" plain="true" onclick="destroyUser()">Удалить</a>
+    <input id="file" class="easyui-filebox" style="width:300px; height:20px;" buttonText="Выбрать файл">
+    <a href="javascript:void(0)" class="easyui-linkbutton" plain="true" onclick="uploadFile()">Загрузить</a>
+    @*<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-filesave" plain="true" onclick="destroyUser()">Загрузить</a>*@
+</div>
+
+<div id="dlg" class="easyui-dialog" style="width:450px" data-options="closed:true,modal:true,border:'thin',buttons:'#dlg-buttons'">
+    <form id="fm" method="get" novalidate style="margin:0;padding:20px 50px">
+        <h3>Данные сотрудника</h3>
+        @foreach (PropertyInfo property in properties)
+        {
+            var displayAtrr = property.GetCustomAttribute<DisplayAttribute>();
+            var requaredAttr = property.GetCustomAttribute<RequiredAttribute>();
+            var labelName = $"{(displayAtrr != null ? displayAtrr.Name : property.Name)}:";
+            var required = requaredAttr != null;
+            if (displayAtrr == null)
+            {
+                continue;
+            }
+            <div style="margin-bottom:10px; vertical-align:central;">
+                
+                @if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?))
+                {
+                    <input id="@property.Name" name="@property.Name" class="easyui-numberbox" required="@required" label="@labelName" style="width:100%;">
+                }
+                else if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
+                {
+                    <input class="easyui-checkbox" id="@property.Name" name="@property.Name" required="@required" label="@labelName" value="">
+                }
+                else if (property.PropertyType.IsEnum)
+                {
+                    <select class="easyui-combobox" name="@property.Name" id="@property.Name" required="@required" label="@labelName" style="width:100%;">
+                        @foreach (var value in Enum.GetValues(property.PropertyType))
+                        {
+                            <option value="@value">@Enum.GetName(property.PropertyType, value)</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <input id="@property.Name" name="@property.Name" class="easyui-textbox" required="@required" label="@labelName" style="width:100%;">
+                }
+            </div>
+        }
+    </form>
+</div>
+<div id="dlg-buttons">
+    <a href="javascript:void(0)" class="easyui-linkbutton c6" iconCls="icon-ok" onclick="saveUser()" style="width:100px">Сохранить</a>
+    <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-cancel" onclick="javascript:$('#dlg').dialog('close')" style="width:90px">Отмена</a>
+</div>
